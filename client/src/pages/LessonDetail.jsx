@@ -23,13 +23,13 @@ const LessonDetail = () => {
         setLoading(true);
         
         // Fetch lesson data
-        const lessonResponse = await axios.get(`/api/lessons/${lessonId}`);
+        const lessonResponse = await axios.get(`https://micro-learning-platform.onrender.com/api/lessons/${lessonId}`);
         setLesson(lessonResponse.data);
         
         // Fetch user progress for this lesson
         if (user && user._id) {
           try {
-            const progressResponse = await axios.get(`/api/progress/${user._id}/${lessonId}`);
+            const progressResponse = await axios.get(`https://micro-learning-platform.onrender.com/api/progress/${user._id}/${lessonId}`);
             setProgress(progressResponse.data);
             
             // If there's saved progress, set the current step
