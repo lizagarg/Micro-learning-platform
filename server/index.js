@@ -23,7 +23,10 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: ['https://micro-learning-platform-frontend.onrender.com/', 'http://localhost:5173'], // update with your actual frontend domain
+  credentials: true
+}));
 app.use(morgan('dev'));
 
 // Database connection
