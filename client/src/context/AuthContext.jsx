@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await axios.post('https://micro-learning-platform.onrender.com/api/auth/login', { email, password });
       const { token } = response.data;
       
       localStorage.setItem('token', token);
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      const response = await axios.post('/api/auth/register', { name, email, password });
+      const response = await axios.post('https://micro-learning-platform.onrender.com/api/auth/register', { name, email, password });
       return { success: true, message: response.data.message };
     } catch (error) {
       console.error('Registration error:', error.response?.data || error.message);
