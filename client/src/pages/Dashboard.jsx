@@ -17,12 +17,12 @@ const Dashboard = () => {
         setLoading(true);
         
         // Fetch lessons
-        const lessonsResponse = await axios.get('/api/lessons');
+        const lessonsResponse = await axios.get('https://micro-learning-platform.onrender.com/api/lessons');
         setLessons(lessonsResponse.data);
         
         // Fetch user progress
         if (user && user._id) {
-          const progressResponse = await axios.get(`/api/progress/${user._id}`);
+          const progressResponse = await axios.get(`https://micro-learning-platform.onrender.com/api/progress/${user._id}`);
           
           // Transform progress data to be more easily accessible
           const progressMap = {};
