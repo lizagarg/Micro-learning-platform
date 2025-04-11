@@ -7,12 +7,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Routes
-import authRoutes from './routes/auth.js';
-import lessonRoutes from './routes/lessons.js';
-import progressRoutes from './routes/progress.js';
+import authRoutes from './src/routes/auth.js';
+import lessonRoutes from './src/routes/lessons.js';
+import progressRoutes from './src/routes/progress.js';
 
 // Middleware
-import { verifyToken } from './middleware/auth.js';
+import { verifyToken } from './src/middleware/auth.js';
 
 // Environment variables
 dotenv.config();
