@@ -7,26 +7,23 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Routes
-import authRoutes from './src/routes/auth.js';
-import lessonRoutes from './src/routes/lessons.js';
-import progressRoutes from './src/routes/progress.js';
+import authRoutes from './routes/auth.js';
+import lessonRoutes from './routes/lessons.js';
+import progressRoutes from './routes/progress.js';
 
 // Middleware
-import { verifyToken } from './src/middleware/auth.js';
+import { verifyToken } from './middleware/auth.js';
 
 // Environment variables
 dotenv.config();
 
 // Create Express app
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
-app.use(cors({
-  origin: ['https://micro-learning-platform-frontend.onrender.com/', 'http://localhost:5173'], // update with your actual frontend domain
-  credentials: true
-}));
+app.use(cors());
 app.use(morgan('dev'));
 
 // Database connection

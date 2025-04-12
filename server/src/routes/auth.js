@@ -57,10 +57,12 @@ router.post('/login', async (req, res) => {
     
     // Create and sign JWT
     const payload = {
-      _id: user._id,
+      _id: user._id.toString(),
       name: user.name,
       email: user.email
     };
+    
+    console.log('Login payload:', payload);
     
     jwt.sign(
       payload,

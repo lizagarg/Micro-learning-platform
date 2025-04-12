@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/:userId', verifyToken, async (req, res) => {
   try {
     // Ensure the requesting user can only access their own progress
-    if (req.user._id !== req.params.userId) {
+    if (req.user._id.toString() !== req.params.userId) {
       return res.status(403).json({ message: 'Unauthorized to access this progress data' });
     }
     
@@ -29,7 +29,7 @@ router.get('/:userId', verifyToken, async (req, res) => {
 router.get('/:userId/:lessonId', verifyToken, async (req, res) => {
   try {
     // Ensure the requesting user can only access their own progress
-    if (req.user._id !== req.params.userId) {
+    if (req.user._id.toString() !== req.params.userId) {
       return res.status(403).json({ message: 'Unauthorized to access this progress data' });
     }
     
@@ -61,15 +61,28 @@ router.post('/', verifyToken, async (req, res) => {
   try {
     const { userId, lessonId, completed, currentStep, percentComplete, answers } = req.body;
     
+    console.log('Request user ID:', req.user._id);
+    console.log('Request body userId:', userId);
+    
     // Ensure the requesting user can only update their own progress
-    if (req.user._id !== userId) {
+    if (req.user._id.toString() !== userId) {
       return res.status(403).json({ message: 'Unauthorized to update this progress data' });
     }
     
     // Try to find existing progress
     let progress = await Progress.findOne({ userId, lessonId });
     
+    const now = new Date();
+    console.log('Progress update initiated at:', now);
+    
     if (progress) {
+      console.log('Existing progress found:', {
+        userId,
+        lessonId,
+        currentStreak: progress.currentStreak,
+        lastStreakUpdate: progress.lastStreakUpdate
+      });
+      
       // Update existing progress
       progress.completed = completed !== undefined ? completed : progress.completed;
       progress.currentStep = currentStep !== undefined ? currentStep : progress.currentStep;
@@ -83,9 +96,11 @@ router.post('/', verifyToken, async (req, res) => {
         });
       }
       
-      progress.lastAccessed = Date.now();
+      // Update lastAccessed to trigger streak calculation in pre-save hook
+      progress.lastAccessed = now;
       
       await progress.save();
+      console.log('Progress updated - new streak value:', progress.currentStreak);
     } else {
       // Create new progress
       const newProgress = new Progress({
@@ -94,7 +109,10 @@ router.post('/', verifyToken, async (req, res) => {
         completed: completed || false,
         currentStep: currentStep || 0,
         percentComplete: percentComplete || 0,
-        lastAccessed: Date.now()
+        lastAccessed: now,
+        accessDates: [now],
+        currentStreak: 1,
+        lastStreakUpdate: now
       });
       
       // If answers is provided, add them

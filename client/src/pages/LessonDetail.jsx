@@ -23,13 +23,13 @@ const LessonDetail = () => {
         setLoading(true);
         
         // Fetch lesson data
-        const lessonResponse = await axios.get(`https://micro-learning-platform.onrender.com/api/lessons/${lessonId}`);
+        const lessonResponse = await axios.get(`/api/lessons/${lessonId}`);
         setLesson(lessonResponse.data);
         
         // Fetch user progress for this lesson
         if (user && user._id) {
           try {
-            const progressResponse = await axios.get(`https://micro-learning-platform.onrender.com/api/progress/${user._id}/${lessonId}`);
+            const progressResponse = await axios.get(`/api/progress/${user._id}/${lessonId}`);
             setProgress(progressResponse.data);
             
             // If there's saved progress, set the current step
@@ -57,24 +57,32 @@ const LessonDetail = () => {
   // Update progress in the backend
   const updateProgress = async (updatedProgress) => {
     try {
-      if (!user || !user._id) return;
+      if (!user || !user._id) {
+        console.error('Cannot update progress: User or user ID is missing', user);
+        return;
+      }
+      
+      console.log('Updating progress with user:', user);
+      console.log('User ID for progress update:', user._id);
       
       const progressData = {
-        userId: user._id,
+        userId: user._id.toString(), // Ensure it's a string
         lessonId,
         ...updatedProgress,
-        lastAccessed: new Date().toISOString()
+        // lastAccessed will be updated on the server automatically
       };
       
-      await axios.post('/api/progress', progressData);
+      console.log('Sending progress data:', progressData);
       
-      // Update local progress state
-      setProgress({
-        ...progress,
-        ...updatedProgress
-      });
+      const response = await axios.post('/api/progress', progressData);
+      console.log('Progress update response:', response.data);
+      
+      // Update local progress state with the response from server
+      // which will include the updated streak information
+      setProgress(response.data);
+      
     } catch (err) {
-      console.error('Error updating progress:', err);
+      console.error('Error updating progress:', err.response?.data || err.message);
     }
   };
 
@@ -152,23 +160,33 @@ const LessonDetail = () => {
       }
     });
     
-    // Update answers in progress
-    const updatedAnswers = { ...progress?.answers } || {};
-    updatedAnswers[questionId] = {
-      selected: answers[questionId],
-      correct: isCorrect
-    };
-    
-    updateProgress({ answers: updatedAnswers });
+    // Only save correct answers to progress
+    if (isCorrect) {
+      // Update answers in progress
+      const updatedAnswers = { ...progress?.answers } || {};
+      updatedAnswers[questionId] = {
+        selected: answers[questionId],
+        correct: isCorrect
+      };
+      
+      updateProgress({ answers: updatedAnswers });
+    }
+  };
+
+  // Add function to reset feedback for a question
+  const resetQuestionFeedback = (questionId) => {
+    const newFeedbacks = { ...feedbacks };
+    delete newFeedbacks[questionId];
+    setFeedbacks(newFeedbacks);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
-            <p className="text-lg">Loading lesson...</p>
+            <p className="text-lg text-gray-700 dark:text-gray-300">Loading lesson...</p>
           </div>
         </div>
       </div>
@@ -177,15 +195,15 @@ const LessonDetail = () => {
 
   if (error || !lesson) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900 dark:border-red-700 dark:text-red-300 px-4 py-3 rounded mb-4">
             {error || 'Lesson not found'}
           </div>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors duration-200"
           >
             Return to Dashboard
           </button>
@@ -197,27 +215,27 @@ const LessonDetail = () => {
   // Lesson completion
   if (currentStep >= lesson.content.length) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white shadow rounded-lg p-6 text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Congratulations!</h1>
-            <p className="text-xl text-gray-600 mb-6">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center transition-colors duration-200">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Congratulations!</h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
               You have completed the "{lesson.title}" lesson.
             </p>
             <div className="mb-8">
-              <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-800 flex items-center justify-center mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-600 dark:text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
             </div>
-            <p className="text-gray-500 mb-6">
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
               Redirecting to dashboard in a few seconds...
             </p>
             <button
               onClick={() => navigate('/')}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors duration-200"
             >
               Return to Dashboard Now
             </button>
@@ -230,38 +248,38 @@ const LessonDetail = () => {
   const currentContent = lesson.content[currentStep];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <Navbar />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Lesson header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{lesson.title}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{lesson.title}</h1>
           
           {/* Progress bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
             <div 
-              className="h-2.5 rounded-full bg-blue-600"
+              className="h-2.5 rounded-full bg-blue-600 dark:bg-blue-500"
               style={{ width: `${Math.round((currentStep / lesson.content.length) * 100)}%` }}
             ></div>
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Step {currentStep + 1} of {lesson.content.length}
           </p>
         </div>
 
         {/* Lesson content */}
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6 transition-colors duration-200">
           {currentContent.type === 'text' && (
-            <div className="prose max-w-none">
-              <h2 className="text-xl font-semibold mb-4">{currentContent.title}</h2>
-              <div className="text-gray-700">{currentContent.body}</div>
+            <div className="prose dark:prose-invert max-w-none">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{currentContent.title}</h2>
+              <div className="text-gray-700 dark:text-gray-300">{currentContent.body}</div>
             </div>
           )}
 
           {currentContent.type === 'video' && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">{currentContent.title}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{currentContent.title}</h2>
               <div className="aspect-w-16 aspect-h-9 mb-4">
                 <iframe 
                   src={currentContent.videoUrl} 
@@ -271,19 +289,19 @@ const LessonDetail = () => {
                 ></iframe>
               </div>
               {currentContent.description && (
-                <div className="text-gray-700 mt-4">{currentContent.description}</div>
+                <div className="text-gray-700 dark:text-gray-300 mt-4">{currentContent.description}</div>
               )}
             </div>
           )}
 
           {/* Questions for this step */}
           {currentContent.questions && currentContent.questions.length > 0 && (
-            <div className="mt-8 border-t pt-6">
-              <h3 className="text-lg font-medium mb-4">Check Your Understanding</h3>
+            <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Check Your Understanding</h3>
               
               {currentContent.questions.map((question, qIndex) => (
-                <div key={question._id || qIndex} className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <p className="font-medium mb-3">{question.text}</p>
+                <div key={question._id || qIndex} className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors duration-200">
+                  <p className="font-medium text-gray-900 dark:text-white mb-3">{question.text}</p>
                   
                   <div className="space-y-2">
                     {question.options.map((option, oIndex) => (
@@ -295,11 +313,11 @@ const LessonDetail = () => {
                           value={option}
                           checked={answers[question._id] === option}
                           onChange={() => handleAnswerChange(question._id, option)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                          className="h-4 w-4 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400"
                         />
                         <label
                           htmlFor={`question_${question._id}_option_${oIndex}`}
-                          className="ml-2 block text-gray-700"
+                          className="ml-2 block text-gray-700 dark:text-gray-300"
                         >
                           {option}
                         </label>
@@ -311,13 +329,25 @@ const LessonDetail = () => {
                     <button
                       onClick={() => checkAnswer(question._id)}
                       disabled={!answers[question._id]}
-                      className="mt-3 px-3 py-1 bg-blue-600 text-white text-sm rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="mt-3 px-3 py-1 bg-blue-600 text-white text-sm rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors duration-200"
                     >
                       Check Answer
                     </button>
                   ) : (
-                    <div className={`mt-3 p-2 rounded ${feedbacks[question._id].correct ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {feedbacks[question._id].message}
+                    <div className="mt-3">
+                      <div className={`p-2 rounded ${feedbacks[question._id].correct ? 'bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100' : 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-100'}`}>
+                        {feedbacks[question._id].message}
+                      </div>
+                      
+                      {/* Add Try Again button for incorrect answers */}
+                      {!feedbacks[question._id].correct && (
+                        <button
+                          onClick={() => resetQuestionFeedback(question._id)}
+                          className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors duration-200"
+                        >
+                          Try Again
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -328,7 +358,7 @@ const LessonDetail = () => {
 
         {/* Error message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900 dark:border-red-700 dark:text-red-300 px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
@@ -338,13 +368,13 @@ const LessonDetail = () => {
           <button
             onClick={handlePrevStep}
             disabled={currentStep === 0}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
             Previous
           </button>
           <button
             onClick={handleNextStep}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors duration-200"
           >
             {currentStep < lesson.content.length - 1 ? 'Next' : 'Complete Lesson'}
           </button>
